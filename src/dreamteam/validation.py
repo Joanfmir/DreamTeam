@@ -8,7 +8,7 @@ Regla d'or: el split de validació ha d'imitar el split train/test real.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd

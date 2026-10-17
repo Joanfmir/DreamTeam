@@ -1,9 +1,9 @@
 """Baseline del repte Schneider Electric 2025: classificació d'oportunitats + explicabilitat.
 
 Executar des de l'arrel del repo (abans: bash scripts/download_past_data.sh):
-    python practica/2025_schneider_explainability/baseline.py
+    python reptes/2025_schneider_explicabilitat/baseline.py
 
-Genera a practica/2025_schneider_explainability/outputs/:
+Genera a reptes/2025_schneider_explicabilitat/outputs/:
     shap_beeswarm.png, shap_waterfall_guanyada.png, shap_waterfall_perduda.png, importancia.csv
 
 ⚠️ Lliçó d'aquest dataset: el 77 % de les files tenen features duplicades. Un K-Fold aleatori

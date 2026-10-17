@@ -2,6 +2,8 @@
 numpy
 pandas
 pyarrow
+openpyxl          # Excel (NTT 2023, UPC 2023)
+scipy
 scikit-learn
 matplotlib
 seaborn
@@ -13,17 +15,11 @@ catboost
 xgboost
 optuna
 
-# Explicabilitat
+# Explicabilitat i demo
 shap
-
-# Demo
 streamlit
 plotly
 
-# Opcionals (descomentar si el repte ho demana)
-# polars                 # dades grans
-# sentence-transformers  # NLP / embeddings de text
-# torch torchvision      # imatges
-# open_clip_torch        # embeddings CLIP
-# ortools                # optimització combinatòria
-# folium geopandas       # mapes
+# Desenvolupament
+pytest
+ruff

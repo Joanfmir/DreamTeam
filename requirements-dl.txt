@@ -1,0 +1,6 @@
+# Deep learning (opcional): imatges i text. ~2 GB. Instal·lar ABANS del dia D.
+#   pip install -r requirements-dl.txt && python -m dreamteam.embeddings   (baixa els models)
+torch
+transformers
+sentence-transformers
+pillow

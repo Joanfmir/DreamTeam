@@ -10,11 +10,11 @@ Receptes ràpides per als tipus de repte que han sortit a la Datathon FME. Per a
 - **Baseline (15 min):** `dreamteam.models.lgbm_baseline` amb features crues i les categòriques com a `category`.
 - **Model fort:** LightGBM i CatBoost. CatBoost sol guanyar si hi ha moltes categòriques d'alta cardinalitat. Al final, un **ensemble** de 2–3 models (mitjana o rank average).
 - **Feature engineering que sol funcionar:**
-  - Comptatges i freqüències de cada categòrica (`count encoding`).
-  - **Target encoding fet dins la CV** (out-of-fold). Fet sobre tot el train és leakage.
-  - Agregats per grup: mitjana, desviació i màxim del target o de numèriques per client, producte o ciutat.
+  - Comptatges i freqüències de cada categòrica (`features.count_encode`).
+  - **Target encoding fet dins la CV** (out-of-fold, `features.target_encode`). Fet sobre tot el train és leakage. A Accenture 2022 va fer passar l'AUC de 0,821 a 0,837.
+  - Agregats per grup: mitjana, desviació i màxim de numèriques per client, producte o ciutat (`features.group_aggregates`).
   - Interaccions de negoci: preu/unitat, distància/temps, ràtios.
-  - Dates: dia de la setmana, mes, setmana ISO, festius, temps des de l'últim esdeveniment.
+  - Dates: dia de la setmana, mes, setmana ISO, festius, temps des de l'últim esdeveniment (`features.date_features`).
 - **Tuning:** Optuna amb 30–50 proves, **només quan les features estiguin congelades**.
 - **Errors:** files duplicades repartides entre train i validació (CV inflada), IDs a les features, desbalanceig sense ajustar el llindar (per optimitzar F1 cal **triar el llindar sobre les prediccions OOF**).
 
@@ -23,7 +23,7 @@ Receptes ràpides per als tipus de repte que han sortit a la Datathon FME. Per a
 
 - **Reformular com a tabular**: una fila per producte i temporada, amb el target agregat.
 - **Validació temporal**: entrenar amb les temporades 1–3 i validar amb la 4. Mai un K-Fold aleatori.
-- **Productes nous (cold start):** buscar els **k veïns més propers per embedding d'imatge o atributs** a les temporades passades i fer servir la seva demanda com a feature.
+- **Productes nous (cold start):** buscar els **k veïns més propers per embedding d'imatge o atributs** a les temporades passades i fer servir la seva demanda com a feature (`features.knn_target_features`). Pipeline sencer: `reptes/2025_mango_demanda/pipeline.py`.
 - **Mètriques asimètriques:** si quedar-se curt costa més, entrenar amb una pèrdua *quantile* (`objective="quantile"`, `alpha=0,6–0,8`) o **multiplicar per un factor** triat amb validació (`dreamteam.metrics.best_scale_factor`).
 - **Censura:** les vendes estan limitades per l'estoc. Cal fer servir la demanda si la donen, o marcar els casos de *stockout*.
 
@@ -46,24 +46,24 @@ Receptes ràpides per als tipus de repte que han sortit a la Datathon FME. Per a
 ## 5. Imatges i embeddings
 *(Mango 2023 i 2024; embeddings a Mango 2025)*
 
-- **No entrenar CNNs des de zero.** Extreure features amb un model preentrenat congelat (**CLIP** `openai/clip-vit-base-patch32`, ResNet50, EfficientNet) i entrenar un classificador lleuger (LogReg o LightGBM) a sobre.
+- **No entrenar CNNs des de zero.** Extreure features amb un model preentrenat congelat (**CLIP**: `embeddings.image_embeddings`, amb caché) i entrenar un classificador lleuger (LogReg o LightGBM) a sobre. Per a atributs visuals sense entrenar: `embeddings.zero_shot`.
 - Multi-atribut: un cap per atribut o un model per atribut. "No aplica" és una classe més.
 - **Similitud i recomanació:** similitud cosinus entre embeddings, i FAISS si n'hi ha molts.
 - Compatibilitat (outfits): els bons outfits combinen peces **complementàries**, no semblants. Cal filtrar per categoria (top + bottom + sabates + accessori) i puntuar parelles amb un model entrenat sobre els outfits reals.
-- Si donen embeddings, **reduir amb PCA (16–64 components)** abans de passar-los a un model d'arbres.
+- Si donen embeddings, **reduir amb PCA (16–64 components)** abans de passar-los a un model d'arbres (`features.embedding_pca`).
 
 ## 6. NLP (text lliure, ressenyes)
 *(Reviews 2021, AED 2024)*
 
 - Baseline: TF-IDF + Logistic Regression.
-- Fort: `sentence-transformers` (`all-MiniLM-L6-v2`, multilingüe: `paraphrase-multilingual-MiniLM-L12-v2`), embeddings i un model a sobre, o bé clustering.
+- Fort: `embeddings.text_embeddings` (MiniLM multilingüe) i un model a sobre, o bé clustering. **Però proveu sempre TF-IDF primer**: a Reviews 2021 va guanyar els embeddings (MAE 0,33 vs. 0,44).
 - Aspectes i temes: BERTopic, o un LLM per etiquetar una mostra.
 
 ## 7. Optimització combinatòria
 *(Qualcomm 2022, formació d'equips de l'AED 2024)*
 
 - Formular-ho primer: **funció objectiu i restriccions**.
-- Eines: **OR-Tools** (routing, TSP i VRP, CP-SAT per a assignacions), heurístiques (nearest neighbour + 2-opt), **simulated annealing**.
+- Eines: `dreamteam.optim` (serp, veí més proper, 2-opt, k-means equilibrat), **OR-Tools** (routing, CP-SAT per a assignacions) i **simulated annealing**. Exemple sencer: `reptes/2022_qualcomm_power_switches/solver.py`.
 - Problemes grans: clustering per descompondre i resoldre cada clúster per separat.
 
 ## 8. Reptes oberts (visualització o impacte)

@@ -10,3 +10,17 @@ requires-python = ">=3.10"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E402"]  # els scripts configuren matplotlib abans d'importar pyplot
+
+[tool.ruff.lint.isort]
+known-first-party = ["dreamteam", "baseline"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

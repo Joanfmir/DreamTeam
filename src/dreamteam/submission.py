@@ -25,7 +25,8 @@ def make_submission(
     sub = pd.DataFrame({id_col: np.asarray(ids), target_col: np.asarray(preds)})
 
     assert sub[target_col].notna().all(), "Hi ha prediccions NaN"
-    assert np.isfinite(sub[target_col]).all(), "Hi ha prediccions infinites"
+    if pd.api.types.is_numeric_dtype(sub[target_col]):  # les classes de text no poden ser infinites
+        assert np.isfinite(sub[target_col].astype(float)).all(), "Hi ha prediccions infinites"
     assert sub[id_col].is_unique, "Hi ha IDs duplicats"
 
     if sample_path is not None:

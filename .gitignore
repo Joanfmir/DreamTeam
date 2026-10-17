@@ -22,3 +22,8 @@ venv/
 .DS_Store
 .vscode/
 .idea/
+
+# Caché d'embeddings i tests
+cache/
+.pytest_cache/
+.ruff_cache/

@@ -62,6 +62,8 @@ Puntueu cada repte d'1 a 5 en cada criteri:
 
 ## Presentació (5–10 min)
 
+Plantilla slide a slide: [`07_plantilla_presentacio.md`](07_plantilla_presentacio.md).
+
 1. **El problema en una frase**, en llenguatge de negoci, no de dades.
 2. **Un insight sorprenent** de l'EDA, amb un sol gràfic.
 3. **La solució:** diagrama simple del pipeline i per què funciona.
@@ -81,4 +83,4 @@ Checklist:
 - ❌ **Leakage**: features calculades amb el target o amb dades del futur, o IDs que es repeteixen entre train i test.
 - ❌ Perseguir el leaderboard públic (overfitting). Cal fiar-se de la CV.
 - ❌ Començar les slides 2 hores abans de l'entrega.
-- ❌ Instal·lar llibreries el mateix dia. **Tot instal·lat i provat abans** (`requirements.txt`).
+- ❌ Instal·lar llibreries el mateix dia. **Tot instal·lat i provat abans** (`make setup`, `make setup-dl`, `make baselines`).
