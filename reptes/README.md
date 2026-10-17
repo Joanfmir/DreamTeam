@@ -10,7 +10,7 @@ bash scripts/download_past_data.sh          # totes les dades públiques (~125 M
 
 | Any | Repte | Tipus | Mètrica | Dades | Codi nostre | Resultat |
 |---|---|---|---|---|---|---|
-| 2025 | [**Mango** · demanda](2025_mango_demanda/ENUNCIAT.md) | Forecasting + embeddings | Asimètrica 0–100 (Kaggle 80 %) | Sintètiques | [`pipeline.py`](2025_mango_demanda/pipeline.py) | error 0,524 → **0,218** |
+| 2025 | [**Mango** · demanda](2025_mango_demanda/ENUNCIAT.md) | Forecasting + embeddings | Asimètrica 0–100 (Kaggle 80 %) | Sintètiques | [`pipeline.py`](2025_mango_demanda/pipeline.py) | error 0,524 → **0,220** |
 | 2025 | [**Smadex** · ingressos](2025_smadex_ingressos/ENUNCIAT.md) | Regressió amb zeros | **MSLE** + velocitat | Privades | — | — |
 | 2025 | [**Schneider** · explicabilitat](2025_schneider_explicabilitat/ENUNCIAT.md) | Classificació + XAI | Rúbrica (F1 ≥ 0,7) | ✅ | [`baseline.py`](2025_schneider_explicabilitat/baseline.py) | AUC **0,71** (honesta) |
 | 2024 | [**Mango** · atributs](2024_mango_atributs/ENUNCIAT.md) | Multi-sortida, visió | **Accuracy** | ✅ (sense imatges) | [`baseline.py`](2024_mango_atributs/baseline.py) | **0,801** (majoritària 0,640) |
@@ -19,7 +19,7 @@ bash scripts/download_past_data.sh          # totes les dades públiques (~125 M
 | 2023 | [**Mango** · outfits](2023_mango_outfits/ENUNCIAT.md) | Recomanació visual | Pitch + **repo** | ❌ (404) | — | — |
 | 2023 | [**NTT DATA** · hospitals](2023_nttdata_hospitals/ENUNCIAT.md) | Forecasting + segmentació | Oberta | ✅ | — | — |
 | 2023 | [**UPC Sostenible** · mobilitat](2023_upc_mobilitat/ENUNCIAT.md) 🥇 | Factors + mapes + propostes | Oberta | ✅ | — | — |
-| 2022 | [**Accenture** · supply chain](2022_accenture_supply_chain/ENUNCIAT.md) 🥇 | Classificació tabular | **ROC AUC** | ✅ | [`baseline.py`](2022_accenture_supply_chain/baseline.py), [`features_v2.py`](2022_accenture_supply_chain/features_v2.py) | AUC 0,821 → **0,837** |
+| 2022 | [**Accenture** · supply chain](2022_accenture_supply_chain/ENUNCIAT.md) 🥇 | Classificació tabular | **ROC AUC** | ✅ | [`baseline.py`](2022_accenture_supply_chain/baseline.py), [`features_v2.py`](2022_accenture_supply_chain/features_v2.py) | AUC 0,821 → **0,836** |
 | 2022 | [**Qualcomm** · power switches](2022_qualcomm_power_switches/ENUNCIAT.md) | Optimització (TSP múltiple) | Longitud mitjana | ✅ | [`solver.py`](2022_qualcomm_power_switches/solver.py) | **8,4×** millor que l'exemple |
 | 2022 | [**AED** · envelliment](2022_aed_envelliment/ENUNCIAT.md) | Impacte social | Oberta | ✅ obertes | — | — |
 | 2021 | [**Reviews** · NLP](2021_reviews_nlp/ENUNCIAT.md) 🥇 | Text | Oberta (acc / MAE) | ✅ | [`baseline.py`](2021_reviews_nlp/baseline.py) | MAE **0,334** estrelles |
@@ -37,7 +37,7 @@ Quatre setmanes per arribar a la Datathon **sabent treballar junts** i amb les e
 | Setmana | Reptes | Què entrenem | Objectiu concret |
 |---|---|---|---|
 | **1** · 19–25 oct | Schneider 2025 + Reviews 2021 | Setup, validació, **leakage per duplicats**, SHAP, NLP bàsic | Tothom executa els baselines. F1 ≥ 0,7 **amb CV agrupada** a Schneider. 1 insight per persona |
-| **2** · 26 oct–1 nov | Accenture 2022 + Mango 2024 | **Feature engineering**, encodings, multi-sortida | Superar AUC 0,837 i accuracy 0,801. Afegir imatges (CLIP) a Mango 2024 si podem aconseguir-les |
+| **2** · 26 oct–1 nov | Accenture 2022 + Mango 2024 | **Feature engineering**, encodings, multi-sortida | Superar AUC 0,836 i accuracy 0,801. Afegir imatges (CLIP) a Mango 2024 si podem aconseguir-les |
 | **3** · 2–8 nov | Mango 2025 (sintètic) + Smadex (proxy de Kaggle) + Qualcomm | **Validació temporal, cold start, pèrdua asimètrica, `log1p`**, optimització | Entendre i modificar `pipeline.py`. Millorar el solver de Qualcomm |
 | **4** · 9–13 nov | **Simulacre de 6 h** amb AED 2024 o UPC 2023 | El dia D en petit | Triar repte, baseline en 1 h, demo, **pitch de 5 min cronometrat** |
 

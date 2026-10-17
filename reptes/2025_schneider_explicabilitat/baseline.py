@@ -48,21 +48,25 @@ validation.cross_validate(model, X_train, y_train, cv=validation.kfold(5, strati
                           metric=metrics.auc, proba=True)
 
 print("\nCV agrupada per duplicats (HONESTA):")
-oof, scores, fold_models = validation.cross_validate(
+oof, scores, _ = validation.cross_validate(
     model, X_train, y_train, cv=validation.group_kfold(5), groups=g_train,
     metric=metrics.auc, proba=True,
 )
 
 # Llindar òptim per a F1 triat sobre OOF (no sobre el test)
 threshold, f1_oof = metrics.best_f1_threshold(y_train, oof)
-proba_test = validation.predict_folds(fold_models, X_test, proba=True)
+
+# Model final: UN sol model entrenat amb tot el train. És el que avaluem al test I el que expliquem
+# (explicar un model i reportar les mètriques d'un altre seria incoherent).
+final_model = models.lgbm_baseline("binary", n_estimators=400, learning_rate=0.05, num_leaves=31)
+final_model.fit(X_train, y_train)
+proba_test = final_model.predict_proba(X_test)[:, 1]
 f1_test = f1_score(y_test, proba_test >= threshold)
 print(f"\nLlindar òptim (OOF): {threshold:.2f} · F1 OOF = {f1_oof:.3f} · F1 test = {f1_test:.3f}"
       f"  {'✓ supera el' if f1_test >= 0.7 else '✗ per sota del'} 0,7 que demanaven")
 print(f"AUC test (agrupat): {metrics.auc(y_test, proba_test):.3f}\n")
 
-# 3. Explicabilitat (el "85 %" del temps)
-final_model = fold_models[0]
+# 3. Explicabilitat (el "85 %" del temps) del mateix model final
 X_expl = X_test.sample(min(2000, len(X_test)), random_state=42)  # mostra per a SHAP
 _, sv = explain.shap_values(final_model, X_expl)
 

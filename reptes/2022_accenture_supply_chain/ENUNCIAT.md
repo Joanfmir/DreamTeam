@@ -40,7 +40,8 @@ order_id,late_order
 
 **El nostre pla (implementat):**
 1. Joins: pes del producte i distàncies port → hub → client ([`baseline.py`](baseline.py)) → **AUC 0,821**.
-2. **Encodings** ([`features_v2.py`](features_v2.py)): count encoding de producte, client, ruta i 3PL, **target encoding OOF** de producte, client, ruta i combinacions (3PL × hub, 3PL × duanes, port × 3PL), i unitats respecte a la mitjana del producte → **AUC 0,837** (+0,016).
+2. **Encodings** ([`features_v2.py`](features_v2.py)): count encoding de producte, client, ruta i 3PL, **target encoding OOF** de producte, client, ruta i combinacions (3PL × hub, 3PL × duanes, port × 3PL), i unitats respecte a la mitjana del producte → **AUC 0,836** (+0,015).
+   ⚠️ El target encoding es calcula **dins de cada fold** (`validation.cross_validate_with_test(fold_fn=...)`). La primera versió el calculava un cop sobre tot el train i feia la CV amb uns altres folds: la validació veia el seu propi target. Aquí la inflació va ser petita (0,8366 vs. 0,8363), però en datasets petits pot ser enorme.
 3. Següents passos: CatBoost amb categòriques natives, ensemble per rangs, Optuna.
 4. **Negoci**: taxa de retard per 3PL × hub, i "quin canvi d'operador en una ruta reduiria més els retards?".
 
@@ -49,10 +50,10 @@ order_id,late_order
 ```bash
 bash scripts/download_past_data.sh accenture
 python reptes/2022_accenture_supply_chain/baseline.py      # AUC 0,821
-python reptes/2022_accenture_supply_chain/features_v2.py   # AUC 0,837
+python reptes/2022_accenture_supply_chain/features_v2.py   # AUC 0,836
 ```
 
-**Repte per a l'equip:** superar 0,837 i apuntar cada intent a `experiments.md`.
+**Repte per a l'equip:** superar 0,836 i apuntar cada intent a `experiments.md`.
 
 ## Fonts
 - [data-students/datathon2022/accenture_challenge](https://github.com/data-students/datathon2022/tree/main/accenture_challenge)

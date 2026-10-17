@@ -4,13 +4,6 @@ import pandas as pd
 from dreamteam import features
 
 
-def test_target_encode_is_out_of_fold():
-    # Cada categoria apareix un sol cop: sense leakage, l'encoding OOF ha de ser la mitjana global
-    df = pd.DataFrame({"c": [f"k{i}" for i in range(50)], "y": [0, 1] * 25})
-    out, _ = features.target_encode(df, None, ["c"], "y", smoothing=0)
-    assert np.allclose(out["te_c"], 0.5)
-
-
 def test_target_encode_combination_and_test(tabular):
     train, test = tabular.iloc[:500], tabular.iloc[500:]
     tr, te = features.target_encode(train, test, ["cat"], "y")

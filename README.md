@@ -32,10 +32,10 @@ La Datathon FME és una competició de **48 hores** amb **3 reptes reals d'empre
 
 | Repte | Què fa el nostre codi | Resultat |
 |---|---|---|
-| [Mango 2025 · demanda](reptes/2025_mango_demanda/ENUNCIAT.md) | Agregació, validació temporal, **kNN per embedding** (cold start), `log1p`, **calibració asimètrica** | error 0,524 → **0,218** (dades sintètiques) |
+| [Mango 2025 · demanda](reptes/2025_mango_demanda/ENUNCIAT.md) | Agregació, validació temporal, **kNN per embedding** (cold start), `log1p`, **calibració asimètrica** | error 0,524 → **0,220** (dades sintètiques) |
 | [Mango 2024 · atributs](reptes/2024_mango_atributs/ENUNCIAT.md) | Un LightGBM per atribut, validació agrupada per model | accuracy **0,801** (majoritària 0,640) |
 | [Schneider 2025 · XAI](reptes/2025_schneider_explicabilitat/ENUNCIAT.md) | LightGBM, llindar F1, SHAP global i local, **detecció de leakage per duplicats** | AUC 0,85 (inflada) → **0,71 honesta** |
-| [Accenture 2022 · retards](reptes/2022_accenture_supply_chain/ENUNCIAT.md) | Joins i distàncies → **target encoding OOF** i count encoding | AUC 0,821 → **0,837** |
+| [Accenture 2022 · retards](reptes/2022_accenture_supply_chain/ENUNCIAT.md) | Joins i distàncies → **target encoding OOF** i count encoding | AUC 0,821 → **0,836** |
 | [Qualcomm 2022 · xips](reptes/2022_qualcomm_power_switches/ENUNCIAT.md) | K-means equilibrat, hongarès, serp + 2-opt (250.000 pins en 2 s) | **8,4×** millor que l'exemple oficial |
 | [Reviews 2021 · NLP](reptes/2021_reviews_nlp/ENUNCIAT.md) | TF-IDF vs. embeddings multilingües | MAE **0,33** estrelles (baseline 0,56) |
 

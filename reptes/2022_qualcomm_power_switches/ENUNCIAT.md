@@ -50,7 +50,7 @@ Script oficial: `solution_metrics.py input.def output.def`.
 
 ## Estratègia guanyadora
 
-**Clau matemàtica:** longitud mitjana = longitud total / nombre de cadenes. Per tant: **fer servir les 16 cadenes** i minimitzar la longitud total.
+**Clau:** longitud mitjana = longitud total / nombre de cadenes *k*. Més cadenes reparteixen el total entre més, però cada cadena afegeix el tram fins als seus drivers, així que **no és automàtic que 16 sigui el millor**. El nostre solver prova k ∈ {16, 12, 8, 4}: amb aquestes dades, **k = 16 guanya sempre** (p. ex. testcase 1: 35,3 M amb k = 16 vs. 42,8 M amb k = 12).
 
 **Equip amb repo públic:** [marc-herrero/Qualcomm-Challenge-](https://github.com/marc-herrero/Qualcomm-Challenge-):
 - **clustering per àrea** per reduir la mida de cada subproblema;
@@ -58,17 +58,19 @@ Script oficial: `solution_metrics.py input.def output.def`.
 - primer van provar un **algorisme genètic** (lent i subòptim) i després **simulated annealing**.
 
 **El nostre solver ([`solver.py`](solver.py)), validat amb el script oficial:**
-1. **K-means equilibrat** en 16 clústers (`optim.balanced_kmeans_labels`).
-2. Assignació clúster ↔ drivers amb l'**algorisme hongarès** (`scipy.optimize.linear_sum_assignment`).
+1. **K-means equilibrat** en k clústers (`optim.balanced_kmeans_labels`).
+2. Tria dels k drivers i assignació clúster ↔ driver amb l'**algorisme hongarès** (`scipy.optimize.linear_sum_assignment`, matriu k × 16).
 3. Ordre dins de cada clúster: **"serp"** O(n log n), que escala a 250.000 pins en ~2 s (`optim.serpentine_order`), més **2-opt** amb extrems fixos si el clúster és petit (`optim.two_opt`).
 
 | Testcase | Pins | Longitud mitjana | Temps |
 |---|---|---|---|
-| example | 100 | **8,78 M** (la solució d'exemple oficial: 73,4 M → **8,4× millor**) | 0,0 s |
-| 0 | 1.000 | 16,4 M | 1,6 s |
-| 1 | 10.000 | 35,3 M | 4,9 s |
-| 2 | 100.000 | 146 M | 0,7 s |
-| 3 | 250.000 | 222 M | 1,8 s |
+| example | 100 | **8,78 M** (la solució d'exemple oficial: 73,4 M → **8,4× millor**) | 0,1 s |
+| 0 | 1.000 | 16,4 M | 2,3 s |
+| 1 | 10.000 | 35,3 M | 19 s |
+| 2 | 100.000 | 146 M | 2,7 s |
+| 3 | 250.000 | 222 M | 5,9 s |
+
+(Els temps inclouen provar els 4 valors de k.)
 
 **Millores possibles:** Or-opt, 2-opt amb llistes de veïns (KD-tree) per als casos grans, una millor assignació de drivers (provar permutacions), i una **visualització** amb matplotlib (punts + línies per cadena) per al bonus.
 

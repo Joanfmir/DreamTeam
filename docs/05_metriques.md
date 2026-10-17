@@ -12,8 +12,8 @@ Quina mètrica ha sortit, a quins reptes, què vol dir, **com s'optimitza** i on
 | **F1** | Schneider 2025 (mínim 0,7) | Classificació (etiquetes) | **Triar el llindar** sobre les prediccions OOF (rarament és 0,5) | `metrics.best_f1_threshold` |
 | **Accuracy** | Mango 2024, Reviews 2021 | Classificació multiclasse | Comparar sempre amb la **classe majoritària**. Amb desbalanceig, enganya | `sklearn.metrics.accuracy_score` |
 | **MSLE / RMSLE** | Smadex 2025, (Restb.ai) | Regressió esbiaixada | **Entrenar sobre `log1p(y)`** amb MSE i desfer amb `expm1` | `metrics.msle`, `models.LogTargetRegressor` |
-| **Asimètrica** (penalitza quedar-se curt) | Mango 2025 | Regressió de quantitats | Predir **per sobre** de la mitjana: quantil > 0,5 o factor > 1 calibrat | `metrics.asymmetric_error`, `metrics.best_scale_factor` |
-| **MAE / RMSE / MAPE** | Restb.ai 2024, Reviews 2021 (MAE d'estrelles) | Regressió | MAE → mediana (L1); RMSE → mitjana (L2); MAPE → errors relatius (log) | `metrics.rmse` |
+| **Asimètrica** (penalitza quedar-se curt) | Mango 2025 | Regressió de quantitats | Predir un **quantil per sobre de la mediana** (pèrdua absoluta asimètrica) o calibrar un factor | `metrics.asymmetric_error`, `metrics.best_scale_factor` |
+| **MAE / RMSE / MAPE** | Restb.ai 2024, Reviews 2021 (MAE d'estrelles) | Regressió | MAE → mediana (L1); RMSE → mitjana (L2); MAPE → mediana ponderada per 1/y | `metrics.rmse` |
 | **Longitud de ruta** + temps | Qualcomm 2022 | Optimització | Reformular l'objectiu (mitjana = total / k) i heurístiques que escalin | `optim.route_length` |
 | **Rúbrica** (presentació, insights, creativitat) | Gairebé tots: Mango 20 %, Schneider 75 %, Mango 2023 100 % | Qualitativa | Història, demo i repo net. Vegeu la plantilla de presentació | [`07_plantilla_presentacio.md`](07_plantilla_presentacio.md) |
 
@@ -56,10 +56,12 @@ Quina mètrica ha sortit, a quins reptes, què vol dir, **com s'optimitza** i on
 Quedar-se curt (vendes perdudes) costa més que passar-se (estoc sobrant, que es pot liquidar).
 
 **Implicacions:**
-- La predicció òptima **no és la mitjana**, sinó un **quantil alt**. Si quedar-se curt costa *a* i passar-se *b*, el quantil òptim és `a / (a + b)` (p. ex. 2:1 → quantil 0,67).
+- Per a la **pèrdua absoluta asimètrica** (*pinball*: quedar-se curt costa *a* per unitat i passar-se *b*), la predicció òptima és el **quantil `a / (a + b)`** de la distribució condicionada (p. ex. 2:1 → quantil 0,67), **per sobre de la mediana**.
+  - ⚠️ Això no vol dir "per sobre de la mitjana": amb distribucions molt esbiaixades, el quantil 0,67 pot ser més petit que la mitjana.
+  - Per a una altra mètrica asimètrica (quadràtica, puntuació de 0 a 100…), l'òptim és diferent: cal derivar-lo o calibrar-lo.
 - Dues maneres de fer-ho:
   1. `models.lgbm_baseline("quantile", alpha=0.67)`;
-  2. un model normal i **multiplicar per un factor k > 1** calibrat sobre la validació (`metrics.best_scale_factor`). Un equip de 2025 feia servir ×1,08; al nostre pipeline sintètic surt ×1,14.
+  2. un model normal i un **factor k** calibrat sobre la validació amb la mètrica real (`metrics.best_scale_factor`, que busca entre 0,5 i 2). Normalment surt > 1 (un equip de 2025 feia servir ×1,08; al nostre pipeline sintètic, ×1,14), però **no està garantit**: depèn del biaix del model.
 - Quan es publiqui la fórmula exacta, cal implementar-la i calibrar contra ella.
 
 ## MAE vs. RMSE vs. MAPE
@@ -67,10 +69,10 @@ Quedar-se curt (vendes perdudes) costa més que passar-se (estoc sobrant, que es
 |---|---|---|---|
 | **MAE** | errors per igual | **mediana** (`objective="l1"`) | outliers que no volem perseguir |
 | **RMSE** | errors grans molt més | **mitjana** (`objective="regression"`) | quan un error gran és molt dolent |
-| **MAPE** | error relatiu | ≈ treballar en log | preus (Restb.ai): l'error del 10 % importa igual a totes les escales |
+| **MAPE** | error relatiu | **mediana ponderada amb pesos 1/y** (`sample_weight=1/y` amb `objective="l1"`); no definit si y = 0 | preus (Restb.ai): l'error del 10 % importa igual a totes les escales |
 
 ## Optimització (Qualcomm 2022)
-- Llegir bé la funció objectiu: "longitud **mitjana**" = total / nombre de cadenes → **fer servir el màxim de cadenes** i minimitzar el total.
+- Llegir bé la funció objectiu: "longitud **mitjana**" = total / nombre de cadenes *k*. Més cadenes reparteixen el total, però cada una afegeix els trams fins als seus drivers: **cal provar diversos k**. Als testcases de Qualcomm, k = 16 va ser sempre el millor (`solver.py` ho compara).
 - També puntuaven el **temps** d'execució i la **visualització**. Una heurística O(n log n) que escala guanya a una d'exacta que no acaba.
 
 ## Rúbriques (la part humana)

@@ -36,16 +36,28 @@ def best_scale_factor(y_true, y_pred, metric=asymmetric_error, grid=None, **metr
     """Troba el factor k que minimitza metric(y, k · y_pred).
 
     Útil quan la mètrica és asimètrica: un equip de Mango 2025 multiplicava per ~1,08.
-    S'ha de calibrar sobre les prediccions OOF, mai sobre el test.
+    El factor pot sortir per sota o per sobre d'1: depèn de la mètrica i del biaix del model.
+    S'ha de calibrar sobre les prediccions OOF, mai sobre el test. Les files sense predicció
+    (NaN, p. ex. fora del split temporal) s'ignoren.
     """
-    grid = np.arange(0.8, 1.5001, 0.01) if grid is None else grid
-    scores = [metric(y_true, k * np.asarray(y_pred), **metric_kwargs) for k in grid]
-    i = int(np.argmin(scores))
+    y_true, y_pred = np.asarray(y_true, float), np.asarray(y_pred, float)
+    ok = np.isfinite(y_true) & np.isfinite(y_pred)
+    if not ok.any():
+        raise ValueError("No hi ha cap parella (y, predicció) finita per calibrar")
+    y_true, y_pred = y_true[ok], y_pred[ok]
+    grid = np.arange(0.5, 2.0001, 0.01) if grid is None else np.asarray(grid)
+    scores = np.array([metric(y_true, k * y_pred, **metric_kwargs) for k in grid], dtype=float)
+    if not np.isfinite(scores).any():
+        raise ValueError("La mètrica no retorna cap valor finit")
+    i = int(np.nanargmin(scores))
     return float(grid[i]), float(scores[i])
 
 
 def best_f1_threshold(y_true, y_proba) -> tuple[float, float]:
     """Llindar que maximitza F1 (Schneider 2025 demanava F1 ≥ 0,7). Cal fer-lo servir amb les probabilitats OOF."""
+    y_true, y_proba = np.asarray(y_true), np.asarray(y_proba, float)
+    ok = np.isfinite(y_proba)
+    y_true, y_proba = y_true[ok], y_proba[ok]
     thresholds = np.linspace(0.05, 0.95, 91)
     scores = [f1_score(y_true, (y_proba >= t).astype(int)) for t in thresholds]
     i = int(np.argmax(scores))

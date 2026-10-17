@@ -11,7 +11,7 @@ Receptes ràpides per als tipus de repte que han sortit a la Datathon FME. Per a
 - **Model fort:** LightGBM i CatBoost. CatBoost sol guanyar si hi ha moltes categòriques d'alta cardinalitat. Al final, un **ensemble** de 2–3 models (mitjana o rank average).
 - **Feature engineering que sol funcionar:**
   - Comptatges i freqüències de cada categòrica (`features.count_encode`).
-  - **Target encoding fet dins la CV** (out-of-fold, `features.target_encode`). Fet sobre tot el train és leakage. A Accenture 2022 va fer passar l'AUC de 0,821 a 0,837.
+  - **Target encoding fet dins la CV** (out-of-fold, `features.target_encode`). Fet sobre tot el train és leakage. A Accenture 2022 va fer passar l'AUC de 0,821 a 0,836.
   - Agregats per grup: mitjana, desviació i màxim de numèriques per client, producte o ciutat (`features.group_aggregates`).
   - Interaccions de negoci: preu/unitat, distància/temps, ràtios.
   - Dates: dia de la setmana, mes, setmana ISO, festius, temps des de l'últim esdeveniment (`features.date_features`).

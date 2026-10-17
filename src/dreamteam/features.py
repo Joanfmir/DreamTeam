@@ -29,6 +29,12 @@ def count_encode(train: pd.DataFrame, test: pd.DataFrame | None, cols: list[str]
     return train, test
 
 
+def _keys(df: pd.DataFrame, parts: list[str]) -> pd.Series:
+    """Clau de text per a una o diverses columnes (funciona amb category, NaN i números)."""
+    rows = df[parts].itertuples(index=False, name=None)
+    return pd.Series(["|".join(map(str, r)) for r in rows], index=df.index)
+
+
 def _smoothed_means(keys: pd.Series, y: pd.Series, smoothing: float, prior: float) -> pd.Series:
     stats = y.groupby(keys, observed=True).agg(["sum", "count"])
     return (stats["sum"] + smoothing * prior) / (stats["count"] + smoothing)
@@ -50,14 +56,18 @@ def target_encode(
     - Test: mitjana calculada amb tot el train.
     - `smoothing` empeny les categories petites cap a la mitjana global (evita sobreajust).
     - Una entrada de `cols` pot ser una llista per codificar combinacions, p. ex. ["3pl", "logistic_hub"].
-    - Si la validació és agrupada, cal passar els mateixos `groups` perquè els folds coincideixin.
+    - El prior de cada fold es calcula només amb les files d'entrenament d'aquell fold.
+
+    ⚠️ Per avaluar amb CV sense leakage, aquesta funció s'ha de cridar DINS de cada fold extern
+    (train = fold d'entrenament, test = fold de validació). Vegeu `validation.cross_validate(fold_fn=...)`.
+    Cridar-la un cop sobre tot el train i després fer CV amb uns altres folds infla la mètrica.
 
     Crea les columnes `te_<col>` (o `te_<col1>__<col2>`).
     """
     train = train.copy()
     test = None if test is None else test.copy()
     y = train[target]
-    prior = float(y.mean())
+    prior = float(y.mean())  # només per al test (tot el train és coneixement legítim)
 
     if groups is not None:
         from sklearn.model_selection import GroupKFold
@@ -68,16 +78,17 @@ def target_encode(
     for col in cols:
         parts = [col] if isinstance(col, str) else list(col)
         name = "te_" + "__".join(parts)
-        key_train = train[parts].astype(str).agg("|".join, axis=1)
+        key_train = _keys(train, parts)
 
         oof = np.full(len(train), prior)
         for tr, va in splits:
-            means = _smoothed_means(key_train.iloc[tr], y.iloc[tr], smoothing, prior)
-            oof[va] = key_train.iloc[va].map(means).fillna(prior).to_numpy()
+            fold_prior = float(y.iloc[tr].mean())  # sense el target de les files de validació
+            means = _smoothed_means(key_train.iloc[tr], y.iloc[tr], smoothing, fold_prior)
+            oof[va] = key_train.iloc[va].map(means).fillna(fold_prior).to_numpy()
         train[name] = oof
 
         if test is not None:
-            key_test = test[parts].astype(str).agg("|".join, axis=1)
+            key_test = _keys(test, parts)
             means = _smoothed_means(key_train, y, smoothing, prior)
             test[name] = key_test.map(means).fillna(prior).to_numpy()
     return train, test
@@ -157,23 +168,34 @@ def knn_target_features(
     k: int = 10,
     exclude_self: bool = False,
     prefix: str = "knn",
+    metric: str = "cosine",
 ) -> pd.DataFrame:
-    """Target dels k veïns més semblants per embedding: la clau del cold start (Mango 2025).
+    """Target dels k veïns més semblants: la clau del cold start (Mango 2025) i dels preus per zona.
 
     Per a un producte nou, "com es van vendre les peces més semblants de temporades anteriors?".
-    - emb_ref / y_ref: productes amb target conegut (p. ex. temporades passades).
+    - emb_ref / y_ref: productes amb target conegut (p. ex. temporades ANTERIORS).
     - emb_query: productes on volem la feature.
-    - exclude_self=True quan query i ref són el mateix conjunt (s'exclou la pròpia fila → sense leakage).
+    - exclude_self=True quan query i ref són el mateix conjunt i en el mateix ordre: s'exclou
+      explícitament la fila i-èsima de la consulta i (també si hi ha embeddings duplicats).
+    - metric: "cosine" per a embeddings; per a coordenades geogràfiques, "haversine" amb
+      [lat, lon] en RADIANS (veïns per distància real).
 
     Retorna: mitjana, mitjana ponderada per similitud, màxim, desviació i similitud mitjana.
     """
     from sklearn.neighbors import NearestNeighbors
 
     extra = 1 if exclude_self else 0
-    nn = NearestNeighbors(n_neighbors=k + extra, metric="cosine").fit(emb_ref)
+    algorithm = "ball_tree" if metric == "haversine" else "auto"
+    nn = NearestNeighbors(n_neighbors=k + extra, metric=metric, algorithm=algorithm).fit(emb_ref)
     dist, idx = nn.kneighbors(emb_query)
-    dist, idx = dist[:, extra:], idx[:, extra:]
-    sim = np.clip(1 - dist, 1e-6, None)
+    if exclude_self:
+        assert len(emb_query) == len(emb_ref), "exclude_self requereix query = ref (mateix ordre)"
+        drop = idx == np.arange(len(idx))[:, None]
+        drop[~drop.any(axis=1), -1] = True  # si la fila no surt entre els veïns, es descarta l'últim
+        keep = ~drop
+        dist = dist[keep].reshape(len(idx), k)
+        idx = idx[keep].reshape(len(idx), k)
+    sim = np.clip(1 - dist, 1e-6, None) if metric == "cosine" else 1 / (1 + dist)
     vals = np.asarray(y_ref)[idx]
     return pd.DataFrame({
         f"{prefix}{k}_mean": vals.mean(axis=1),

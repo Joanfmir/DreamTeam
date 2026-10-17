@@ -4,10 +4,11 @@
     python reptes/2022_qualcomm_power_switches/solver.py                    # tots els testcases
     python reptes/2022_qualcomm_power_switches/solver.py data/past/2022_qualcomm/priv_testcase0.def
 
-Idea: longitud mitjana = longitud total / nombre de cadenes, així que (1) fem servir les 16
-cadenes possibles i (2) minimitzem la longitud total:
-  1. Agrupar els pins en 16 clústers equilibrats (k-means)
-  2. Assignar a cada clúster un parell (driver d'entrada, driver de sortida) amb l'algorisme hongarès
+Idea: longitud mitjana = longitud total / k. Més cadenes reparteixen el total entre més, però cada
+cadena afegeix el tram d'anada i tornada al seu driver: és un compromís, no una regla. Per això
+provem diversos k (2–16) i ens quedem el millor:
+  1. Agrupar els pins en k clústers equilibrats (k-means)
+  2. Triar quins drivers fer servir i assignar-los als clústers amb l'algorisme hongarès
   3. Ordenar cada clúster: "serp" (ràpid, qualsevol mida) + 2-opt si és petit
   4. Escriure la sortida i validar-la amb el script oficial `solution_metrics.py`
 """
@@ -43,19 +44,16 @@ def parse_def(path: Path):
     return inputs, outputs, pins
 
 
-def solve(inputs, outputs, pins, two_opt_max: int = 1500):
+def solve(inputs, outputs, pins, k: int = 16, two_opt_max: int = 1500):
     xy = np.array([(x, y) for _, x, y in pins], dtype=float)
-    k = min(len(inputs), len(outputs), max(2, len(pins)))
+    k = min(k, len(inputs), len(outputs), len(pins))
     labels = optim.balanced_kmeans_labels(xy, k)
     centers = np.array([xy[labels == c].mean(axis=0) for c in range(k)])
 
-    # Cost d'assignar un clúster a un parell (entrada i, sortida i): anar-hi i tornar
-    ins = np.array([(x, y) for _, x, y in inputs[:k]], dtype=float)
-    outs = np.array([(x, y) for _, x, y in outputs[:k]], dtype=float)
-    cost = (np.abs(centers[:, None] - ins[None]).sum(-1)[:, :, None]
-            + np.abs(centers[:, None] - outs[None]).sum(-1)[:, None, :])  # [clúster, entrada, sortida]
-    # Assignació en dues fases hongareses: entrades i després sortides
-    _, in_of = linear_sum_assignment(cost.min(axis=2))
+    # Cost clúster ↔ driver (Manhattan al centre). Matriu k × 16: l'hongarès tria els k millors drivers
+    ins = np.array([(x, y) for _, x, y in inputs], dtype=float)
+    outs = np.array([(x, y) for _, x, y in outputs], dtype=float)
+    _, in_of = linear_sum_assignment(np.abs(centers[:, None] - ins[None]).sum(-1))
     _, out_of = linear_sum_assignment(np.abs(centers[:, None] - outs[None]).sum(-1))
 
     chains = []
@@ -88,13 +86,16 @@ if __name__ == "__main__":
     for path in files:
         inputs, outputs, pins = parse_def(path)
         t0 = time.perf_counter()
-        chains = solve(inputs, outputs, pins)
+        candidates = {k: solve(inputs, outputs, pins, k=k) for k in (16, 12, 8, 4)}
+        best_k = min(candidates, key=lambda k: np.mean([length for _, length in candidates[k]]))
+        chains = candidates[best_k]
         dt = time.perf_counter() - t0
+        tried = " · ".join(f"k={k}: {np.mean([le for _, le in c]) / 1e6:.1f}M" for k, c in candidates.items())
         out = OUT / f"{path.stem}_solution.def"
         write_output(chains, out)
         avg = np.mean([length for _, length in chains])
         print(f"{path.name:<24} {len(pins):>7,} pins · {len(chains)} cadenes · "
-              f"longitud mitjana {avg:,.0f} · {dt:.1f} s")
+              f"longitud mitjana {avg:,.0f} · {dt:.1f} s   ({tried})")
         official = D / "solution_metrics.py"
         if official.exists() and len(pins) <= 10_000:  # validació oficial (lenta en els casos grans)
             res = subprocess.run([sys.executable, str(official), str(path), str(out)],

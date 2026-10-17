@@ -59,7 +59,7 @@ ID,demand
 **El nostre pla** (implementat a [`pipeline.py`](pipeline.py)):
 1. **Agregar** de setmanes a una fila per producte, amb target = Σ `weekly_demand`.
 2. **Validació temporal**: l'última temporada de train fa de validació. Mai un K-Fold aleatori.
-3. **Cold start amb embeddings**: per a cada producte, la demanda dels **k veïns més semblants** de temporades anteriors (`features.knn_target_features`), més la PCA de l'embedding.
+3. **Cold start amb embeddings**: per a cada producte, la demanda dels **k veïns més semblants de temporades estrictament anteriors** (`features.knn_target_features`), més la PCA de l'embedding. També per a les files de train: si les seves features veiessin temporades futures, el model aprendria amb una informació que al test no tindrà.
 4. **LightGBM sobre `log1p(demanda)`** (`models.LogTargetRegressor`), perquè la demanda és molt esbiaixada.
 5. **Calibrar un factor > 1** sobre la validació (`metrics.best_scale_factor`). Si la fórmula exacta de la mètrica es publica, cal implementar-la a `metrics.py` i calibrar contra ella.
 6. Variants per provar: objectiu `quantile` (alpha 0,6–0,75), CatBoost, ensemble.
@@ -79,8 +79,9 @@ Resultat amb dades sintètiques (error asimètric, més baix és millor):
 |---|---|
 | Mediana constant | 0,524 |
 | LightGBM sense veïns | 0,242 |
-| LightGBM + kNN per embedding | 0,232 |
-| + factor ×1,14 | **0,218** |
+| LightGBM + kNN per embedding (només temporades anteriors) | 0,234 |
+| + factor ×1,14 | **0,220** |
+| Test ocult (simulant el Kaggle privat) | 0,209 |
 
 Per a pràctica amb dades reals de moda: [H&M Personalized Fashion Recommendations](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations). Té articles amb atributs i imatges i transaccions amb data, així que es poden agregar les vendes per article i temporada i predir les dels articles nous.
 

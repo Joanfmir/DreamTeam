@@ -6,7 +6,7 @@
 Passos (els mateixos que hauríem de fer amb les dades reals):
   1. Agregar de setmanes a una fila per producte (target = demanda total)
   2. Validació temporal: l'última temporada de train fa de validació
-  3. Features de cold start: demanda dels k productes més semblants per embedding d'imatge
+  3. Cold start: demanda dels k productes més semblants (per embedding) de temporades ANTERIORS
   4. LightGBM sobre log1p(demanda)
   5. Calibrar un factor > 1 perquè la mètrica penalitza més quedar-se curt
   6. Reentrenar amb tot i generar la submission (ID, demand)
@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[2]
 D = ROOT / "data/synthetic/mango2025"   # amb dades reals: canviar aquesta ruta i revisar noms de columnes
 CAT_COLS = ["aggregated_family", "family", "category", "fabric", "color_name", "length_type",
             "silhouette_type", "sleeve_length_type", "print_type", "archetype", "moment"]
+K = 20
 NUM_COLS = ["price", "num_stores", "num_sizes", "life_cycle_length", "has_plus_size"]
 
 
@@ -40,10 +41,30 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     return static.reset_index()
 
 
-def add_knn(ref: pd.DataFrame, emb_ref, query: pd.DataFrame, emb_query, exclude_self: bool):
-    knn = features.knn_target_features(emb_ref, np.log1p(ref["demand"].to_numpy()), emb_query,
-                                       k=20, exclude_self=exclude_self)
+def add_knn(ref: pd.DataFrame, emb_ref, query: pd.DataFrame, emb_query):
+    """kNN de la demanda de `ref` per a cada fila de `query` (ref ha de ser estrictament anterior)."""
+    knn = features.knn_target_features(emb_ref, np.log1p(ref["demand"].to_numpy()), emb_query, k=K)
     return pd.concat([query.reset_index(drop=True), knn], axis=1)
+
+
+def add_knn_past(prod: pd.DataFrame, emb) -> pd.DataFrame:
+    """kNN per a les files d'entrenament fent servir NOMÉS temporades anteriors a la seva.
+
+    Així el model aprèn amb features construïdes igual que les del test (que només veu el passat).
+    La primera temporada no té passat: les seves features queden a NaN (LightGBM ho gestiona).
+    """
+    parts = []
+    for season in sorted(prod["id_season"].unique()):
+        q = (prod["id_season"] == season).to_numpy()
+        ref = (prod["id_season"] < season).to_numpy()
+        if ref.any():
+            parts.append(add_knn(prod[ref], emb[ref], prod[q], emb[q]))
+        else:
+            cols = [f"knn{K}_{stat}" for stat in ("mean", "wmean", "max", "std", "sim")]
+            nan = pd.DataFrame(np.nan, index=range(q.sum()), columns=cols)
+            parts.append(pd.concat([prod[q].reset_index(drop=True), nan], axis=1))
+    out = pd.concat(parts, ignore_index=True)
+    return out.set_index("id").loc[prod["id"]].reset_index()  # mateix ordre que `prod`
 
 
 def matrix(df: pd.DataFrame, emb_pca: pd.DataFrame, cats: dict | None = None):
@@ -69,8 +90,8 @@ if __name__ == "__main__":
     tr, va = prod[~is_val], prod[is_val]
 
     # ── 3. Cold start: veïns només de temporades ANTERIORS a la que predim ──
-    tr_f = add_knn(tr, emb[~is_val], tr, emb[~is_val], exclude_self=True)
-    va_f = add_knn(tr, emb[~is_val], va, emb[is_val], exclude_self=False)
+    tr_f = add_knn_past(tr, emb[~is_val])
+    va_f = add_knn(tr, emb[~is_val], va, emb[is_val])
     pca_tr, pca_va = features.embedding_pca(emb[~is_val], emb[is_val], n_components=16)
     X_tr = matrix(tr_f, pca_tr)
     cats = {c: X_tr[c].cat.categories for c in CAT_COLS}
@@ -91,11 +112,11 @@ if __name__ == "__main__":
 
     # ── 5. Calibració asimètrica ───────────────────────────────────────────
     k, score = metrics.best_scale_factor(va["demand"], pred_va, metric=mango_score)
-    print(f"  × factor {k:.2f}              {score:.6f}   ← quedar-se curt costa més: inflem la predicció")
+    print(f"  × factor {k:.2f}              {score:.6f}   ← calibrat a la mètrica asimètrica")
 
     # ── 6. Model final amb totes les temporades i submission ───────────────
-    all_f = add_knn(prod, emb, prod, emb, exclude_self=True)
-    te_f = add_knn(prod, emb, test, emb_test, exclude_self=False)
+    all_f = add_knn_past(prod, emb)
+    te_f = add_knn(prod, emb, test, emb_test)
     pca_all, pca_te = features.embedding_pca(emb, emb_test, n_components=16)
     X_all = matrix(all_f, pca_all)
     cats = {c: X_all[c].cat.categories for c in CAT_COLS}

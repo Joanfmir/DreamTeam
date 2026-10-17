@@ -78,9 +78,18 @@ class TwoStageRegressor(BaseEstimator, RegressorMixin):
     def fit(self, X, y):
         y = np.asarray(y)
         positive = y > 0
-        self.clf_ = clone(self.classifier).fit(X, positive.astype(int))
-        self.reg_ = clone(self.regressor).fit(X[positive], y[positive])
+        # Casos límit: tot zeros (no hi ha res a regressar) o tot positius (no hi ha res a classificar)
+        self.clf_ = clone(self.classifier).fit(X, positive.astype(int)) if 0 < positive.sum() < len(y) else None
+        self.p_const_ = float(positive.mean())
+        self.reg_ = clone(self.regressor).fit(X[positive], y[positive]) if positive.any() else None
         return self
 
     def predict(self, X):
-        return self.clf_.predict_proba(X)[:, 1] * self.reg_.predict(X)
+        if self.reg_ is None:
+            return np.zeros(len(X))
+        if self.clf_ is None:
+            p = np.full(len(X), self.p_const_)
+        else:
+            pos_col = list(self.clf_.classes_).index(1)  # columna de la classe positiva, sigui quina sigui
+            p = self.clf_.predict_proba(X)[:, pos_col]
+        return p * self.reg_.predict(X)

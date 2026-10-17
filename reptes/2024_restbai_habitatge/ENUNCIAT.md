@@ -36,7 +36,7 @@ Repo, model i app o presentació.
 
 **El nostre pla:**
 1. **Target en log** (`log1p(preu)`): els preus són esbiaixats i l'error relatiu és el que importa (`models.LogTargetRegressor`).
-2. **Features geogràfiques**: lat/long, distància al centre, **target encoding OOF del barri o codi postal** (`features.target_encode`) i preu mitjà dels **k veïns geogràfics** (`features.knn_target_features` amb coordenades).
+2. **Features geogràfiques**: lat/long, distància al centre, **target encoding OOF del barri o codi postal** (`features.target_encode`) i preu mitjà dels **k veïns geogràfics** (`features.knn_target_features(..., metric="haversine")` amb `[lat, lon]` en radians, calculat dins de cada fold).
 3. Ràtios: preu per m² del barri, m² per habitació, antiguitat.
 4. **Temps**: si hi ha 10 mesos, validar amb l'últim mes (`validation.time_split`), perquè el mercat es mou.
 5. Outliers: retallar el target per percentils **només al train**, mai al test.
