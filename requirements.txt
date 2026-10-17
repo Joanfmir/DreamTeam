@@ -1,0 +1,29 @@
+# Bàsics
+numpy
+pandas
+pyarrow
+scikit-learn
+matplotlib
+seaborn
+jupyter
+
+# Models tabulars
+lightgbm
+catboost
+xgboost
+optuna
+
+# Explicabilitat
+shap
+
+# Demo
+streamlit
+plotly
+
+# Opcionals (descomentar si el repte ho demana)
+# polars                 # dades grans
+# sentence-transformers  # NLP / embeddings de text
+# torch torchvision      # imatges
+# open_clip_torch        # embeddings CLIP
+# ortools                # optimització combinatòria
+# folium geopandas       # mapes

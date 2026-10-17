@@ -1,0 +1,24 @@
+# Dades i sortides (no van a git: compartiu-les per Drive o USB)
+data/*
+!data/.gitkeep
+submissions/
+models/
+*.pkl
+*.joblib
+catboost_info/
+mlruns/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Sistema i editors
+.DS_Store
+.vscode/
+.idea/
