@@ -94,12 +94,7 @@ submission.make_submission(ids, preds, sample_path="sample_submission.csv")  # v
 
 ## Equip DreamTeam
 
-| Membre | Rol principal | Rol de suport |
-|---|---|---|
-| Joan Fernández ([@Joanfmir](https://github.com/Joanfmir)) | *per decidir* | |
-| *—* | | |
-| *—* | | |
-| *—* | | |
+Repositori creat i mantingut per Joan Fernández ([@Joanfmir](https://github.com/Joanfmir)).
 
 Rols (detall a [`docs/03_estrategia_48h.md`](docs/03_estrategia_48h.md)): **Modelatge** · **Dades i features** · **Visualització i demo** · **Història i presentació**.
 Pla d'entrenament setmanal i checklist: [`reptes/README.md`](reptes/README.md#pla-dentrenament-1710--1311). Experiments: [`experiments.md`](experiments.md).
